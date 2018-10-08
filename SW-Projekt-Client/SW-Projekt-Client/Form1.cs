@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -19,7 +20,9 @@ namespace SW_Projekt_Client
         JanauschLIB Janausch = new JanauschLIB();
         private void StartBut_Click(object sender, EventArgs e)
         {
-            Janausch.TestPing(IpBox.Text);
+            Janausch.TestPing(IPAddress.Parse(IpBox.Text));
+            Janausch.TestPingPort(IPAddress.Parse(IpBox.Text), 80);
+            Console.WriteLine(Janausch.GetLocalIPAddress());
         }
     }
 }

@@ -9,6 +9,8 @@ using System.IO; //wird für die Speicherung in einer Datei benötigt
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace SW_Projekt_Client
 {
@@ -294,8 +296,11 @@ namespace SW_Projekt_Client
         #endregion
 
         #region Internetübertragungen
+        private int Port;
+        private bool PortListening;
+        private Thread Start;
 
-        public void TestPing(string IP)
+        public void TestPing(IPAddress IP)
         {
             Ping pinger = new Ping();
             PingOptions pingo = new PingOptions();
@@ -308,15 +313,78 @@ namespace SW_Projekt_Client
             {
                 Console.WriteLine("IP: " + reply.Address.ToString());
                 Console.WriteLine("Roadtime: "+ reply.RoundtripTime);
-                Console.WriteLine("Buffer: " + reply.Buffer);
+                Console.WriteLine("Buffer: " + reply.Buffer.ToString());
             }
-
+            else
+                Console.WriteLine("Error");
+         }
+        public string GetLocalIPAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            return null;
         }
 
-
-
+        public void TestPingPort(IPAddress IP, int Port)
+        {
+            var sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                sock.Connect(IP, Port);
+                //byte[] Buffer = Encoding.ASCII.GetBytes("Hi");
+                //sock.Send(Buffer);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("No Connection available");
+                return;
+            }
+            Console.WriteLine("Connected");
+            sock.Close();
+            Console.WriteLine("Disconnected");
+        }
+        public void Listener(int Port)
+        {
+            this.Port = Port;
+            PortListening = true;
+            Start = new Thread(new ThreadStart(TestPingPortListener));
+        }
+        public void EndListener()
+        {
+            PortListening = false;
+            if (Start.ThreadState != ThreadState.Unstarted)
+                Start.Join();
+        }
+        public void TestPingPortListener()
+        {
+            TcpListener Listener = new TcpListener(IPAddress.Parse(GetLocalIPAddress()), Port);
+            Listener.Start();
+            while (PortListening)
+            {
+                Socket client = Listener.AcceptSocket();
+                var childSocketThread = new Thread(() =>
+                {
+                IPEndPoint end = client.RemoteEndPoint as IPEndPoint;
+                Console.WriteLine("IP: " + end.Address);
+                byte[] data = new byte[10];
+                int size = client.Receive(data);
+                Console.WriteLine("Recieved data: ");
+                string Data = null;
+                for (int i = 0; i < size; i++)
+                    Data = Data + Convert.ToChar(data[i]).ToString();
+                    Console.WriteLine(Data);
+                client.Close();
+                });
+                childSocketThread.Start();
+            }
+        }
 
         #endregion
-
     }
 }
