@@ -16,5 +16,10 @@ namespace SW_Projekt_Client
         {
             InitializeComponent();
         }
+        JanauschLIB Janausch = new JanauschLIB();
+        private void StartBut_Click(object sender, EventArgs e)
+        {
+            Janausch.TestPing(IpBox.Text);
+        }
     }
 }
